@@ -12,11 +12,11 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.14;
+renderer.toneMappingExposure = 1.32;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#9ca9b7");
-scene.fog = new THREE.FogExp2("#aeb6bc", 0.0135);
+scene.background = new THREE.Color("#9edcff");
+scene.fog = new THREE.FogExp2("#dff5ff", 0.0075);
 
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 500);
 camera.position.set(12, 9, 17);
@@ -34,21 +34,21 @@ const world = new THREE.Group();
 scene.add(world);
 
 const mats = {
-  grass: new THREE.MeshStandardMaterial({ color: "#6f8161", roughness: 0.96 }),
-  grassLight: new THREE.MeshStandardMaterial({ color: "#8ca075", roughness: 0.92 }),
-  rock: new THREE.MeshStandardMaterial({ color: "#575d58", roughness: 1, flatShading: true }),
-  rockLight: new THREE.MeshStandardMaterial({ color: "#6f756d", roughness: 1, flatShading: true }),
-  plaster: new THREE.MeshStandardMaterial({ color: "#d8cba9", roughness: 0.9 }),
-  plasterWarm: new THREE.MeshStandardMaterial({ color: "#c3a77e", roughness: 0.88 }),
-  timber: new THREE.MeshStandardMaterial({ color: "#49372b", roughness: 0.84 }),
-  timberLight: new THREE.MeshStandardMaterial({ color: "#70553a", roughness: 0.85 }),
-  roof: new THREE.MeshStandardMaterial({ color: "#6f4538", roughness: 0.92 }),
-  roofBlue: new THREE.MeshStandardMaterial({ color: "#465760", roughness: 0.9 }),
-  gold: new THREE.MeshStandardMaterial({ color: "#d2b76a", metalness: 0.55, roughness: 0.35 }),
-  window: new THREE.MeshStandardMaterial({ color: "#ffdb81", emissive: "#e69b3d", emissiveIntensity: 1.35, roughness: 0.25 }),
-  leaf: new THREE.MeshStandardMaterial({ color: "#4f6b50", roughness: 0.92, flatShading: true }),
-  leafGold: new THREE.MeshStandardMaterial({ color: "#9a8550", roughness: 0.9, flatShading: true }),
-  cloud: new THREE.MeshBasicMaterial({ color: "#d9d9d2", transparent: true, opacity: 0.25, depthWrite: false }),
+  grass: new THREE.MeshStandardMaterial({ color: "#87bd62", roughness: 0.94 }),
+  grassLight: new THREE.MeshStandardMaterial({ color: "#abd77d", roughness: 0.9 }),
+  rock: new THREE.MeshStandardMaterial({ color: "#697b89", roughness: 1, flatShading: true }),
+  rockLight: new THREE.MeshStandardMaterial({ color: "#90a2ad", roughness: 1, flatShading: true }),
+  plaster: new THREE.MeshStandardMaterial({ color: "#fff0ca", roughness: 0.86 }),
+  plasterWarm: new THREE.MeshStandardMaterial({ color: "#f4c98b", roughness: 0.84 }),
+  timber: new THREE.MeshStandardMaterial({ color: "#68452f", roughness: 0.82 }),
+  timberLight: new THREE.MeshStandardMaterial({ color: "#936640", roughness: 0.82 }),
+  roof: new THREE.MeshStandardMaterial({ color: "#d46858", roughness: 0.88 }),
+  roofBlue: new THREE.MeshStandardMaterial({ color: "#4f91a8", roughness: 0.84 }),
+  gold: new THREE.MeshStandardMaterial({ color: "#f2c85f", metalness: 0.45, roughness: 0.3 }),
+  window: new THREE.MeshStandardMaterial({ color: "#fff2a5", emissive: "#ffb93f", emissiveIntensity: 1.5, roughness: 0.22 }),
+  leaf: new THREE.MeshStandardMaterial({ color: "#4f9b55", roughness: 0.9, flatShading: true }),
+  leafGold: new THREE.MeshStandardMaterial({ color: "#e8ad54", roughness: 0.88, flatShading: true }),
+  cloud: new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.46, depthWrite: false }),
 };
 
 const shadow = (mesh, receive = true) => {
@@ -66,9 +66,9 @@ const box = (w, h, d, material, x = 0, y = 0, z = 0) => {
 const cylinder = (rt, rb, h, sides, material) =>
   shadow(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, sides), material));
 
-const ambient = new THREE.HemisphereLight("#f4e6c3", "#28323d", 2.25);
+const ambient = new THREE.HemisphereLight("#fff8dc", "#78bad5", 3.15);
 scene.add(ambient);
-const sun = new THREE.DirectionalLight("#ffe6aa", 4.2);
+const sun = new THREE.DirectionalLight("#fff0bd", 5.15);
 sun.position.set(-30, 42, 18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -82,7 +82,7 @@ scene.add(sun);
 
 const sunDisc = new THREE.Mesh(
   new THREE.SphereGeometry(4.8, 32, 16),
-  new THREE.MeshBasicMaterial({ color: "#ffe8a8", fog: false })
+  new THREE.MeshBasicMaterial({ color: "#fff0a6", fog: false })
 );
 sunDisc.position.set(-78, 43, -105);
 scene.add(sunDisc);
@@ -343,6 +343,132 @@ for (let i = 0; i < 26; i++) {
   scene.add(g);
 }
 
+const cloudSeaMaterial = new THREE.MeshBasicMaterial({
+  color: "#f8fdff",
+  transparent: true,
+  opacity: 0.72,
+  depthWrite: false,
+});
+const cloudSea = new THREE.InstancedMesh(cloudGeometry, cloudSeaMaterial, 190);
+const cloudDummy = new THREE.Object3D();
+for (let i = 0; i < 190; i++) {
+  const angle = i * 2.39996;
+  const radius = 5 + Math.sqrt(i / 190) * 112;
+  cloudDummy.position.set(
+    Math.cos(angle) * radius,
+    -11.2 + Math.sin(i * 1.83) * 1.15,
+    Math.sin(angle) * radius
+  );
+  cloudDummy.rotation.y = angle * 0.35;
+  cloudDummy.scale.set(5.2 + (i % 7) * 0.75, 1.35 + (i % 4) * 0.28, 4.1 + (i % 5) * 0.62);
+  cloudDummy.updateMatrix();
+  cloudSea.setMatrixAt(i, cloudDummy.matrix);
+}
+cloudSea.instanceMatrix.needsUpdate = true;
+scene.add(cloudSea);
+
+const cloudFloor = new THREE.Mesh(
+  new THREE.CircleGeometry(150, 64),
+  new THREE.MeshBasicMaterial({
+    color: "#e9f9ff",
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  })
+);
+cloudFloor.rotation.x = -Math.PI / 2;
+cloudFloor.position.y = -13.1;
+scene.add(cloudFloor);
+
+const creatureMaterials = {
+  whale: new THREE.MeshStandardMaterial({ color: "#4d86a8", roughness: 0.66, flatShading: true }),
+  whaleLight: new THREE.MeshStandardMaterial({ color: "#bde4e8", roughness: 0.72, flatShading: true }),
+  dolphin: new THREE.MeshStandardMaterial({ color: "#54a7c5", roughness: 0.62, flatShading: true }),
+  eye: new THREE.MeshBasicMaterial({ color: "#173346" }),
+};
+
+function createCloudCreature({ dolphin = false, scale = 1 }) {
+  const g = new THREE.Group();
+  const bodyMat = dolphin ? creatureMaterials.dolphin : creatureMaterials.whale;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), bodyMat);
+  body.scale.set(dolphin ? 2.7 : 3.8, dolphin ? 0.62 : 1.12, dolphin ? 0.72 : 1.28);
+  shadow(body, false);
+  g.add(body);
+
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.72, 14, 10), bodyMat);
+  snout.position.x = dolphin ? 2.45 : 3.15;
+  snout.scale.set(dolphin ? 1.45 : 1.1, dolphin ? 0.35 : 0.8, dolphin ? 0.42 : 0.95);
+  shadow(snout, false);
+  g.add(snout);
+
+  if (!dolphin) {
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), creatureMaterials.whaleLight);
+    belly.position.set(0.55, -0.42, 0);
+    belly.scale.set(2.9, 0.55, 1.04);
+    g.add(belly);
+  }
+
+  const tail = new THREE.Group();
+  tail.position.x = dolphin ? -2.72 : -3.78;
+  [-1, 1].forEach((side) => {
+    const fluke = new THREE.Mesh(new THREE.SphereGeometry(0.62, 10, 7), bodyMat);
+    fluke.position.z = side * (dolphin ? 0.45 : 0.72);
+    fluke.rotation.y = side * 0.48;
+    fluke.scale.set(dolphin ? 0.95 : 1.4, 0.16, dolphin ? 0.74 : 1.08);
+    shadow(fluke, false);
+    tail.add(fluke);
+  });
+  g.add(tail);
+
+  [-1, 1].forEach((side) => {
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(dolphin ? 0.28 : 0.42, dolphin ? 1.4 : 2.05, 3), bodyMat);
+    fin.position.set(dolphin ? -0.15 : -0.35, -0.35, side * (dolphin ? 0.62 : 1.12));
+    fin.rotation.x = side * 1.12;
+    fin.rotation.z = -0.25;
+    shadow(fin, false);
+    g.add(fin);
+  });
+
+  const dorsal = new THREE.Mesh(new THREE.ConeGeometry(dolphin ? 0.3 : 0.48, dolphin ? 1.15 : 1.55, 3), bodyMat);
+  dorsal.position.set(dolphin ? -0.45 : -0.7, dolphin ? 0.72 : 1.15, 0);
+  dorsal.rotation.z = -0.16;
+  shadow(dorsal, false);
+  g.add(dorsal);
+
+  [-1, 1].forEach((side) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(dolphin ? 0.07 : 0.1, 8, 6), creatureMaterials.eye);
+    eye.position.set(dolphin ? 2.1 : 2.78, dolphin ? 0.18 : 0.34, side * (dolphin ? 0.5 : 0.82));
+    g.add(eye);
+  });
+
+  g.scale.setScalar(scale);
+  g.userData.tail = tail;
+  scene.add(g);
+  return g;
+}
+
+const skyCreatures = [
+  { object: createCloudCreature({ scale: 2.05 }), duration: 29, phase: 0.08, span: 104, baseY: -12.4, height: 24, z: -38 },
+  { object: createCloudCreature({ dolphin: true, scale: 0.86 }), duration: 15, phase: 0.06, span: 68, baseY: -11.5, height: 15, z: 28 },
+  { object: createCloudCreature({ dolphin: true, scale: 0.72 }), duration: 15, phase: 0.12, span: 68, baseY: -11.5, height: 13, z: 31 },
+  { object: createCloudCreature({ dolphin: true, scale: 0.62 }), duration: 15, phase: 0.18, span: 68, baseY: -11.5, height: 11, z: 25 },
+];
+
+function updateSkyCreatures(elapsed) {
+  skyCreatures.forEach((creature, index) => {
+    const p = ((elapsed / creature.duration) + creature.phase) % 1;
+    const x = (p - 0.5) * creature.span;
+    const y = creature.baseY + Math.sin(p * Math.PI) * creature.height;
+    const z = creature.z + Math.sin(p * Math.PI * 2) * (index ? 2.4 : 5.5);
+    creature.object.position.set(x, y, z);
+    const slope = (Math.PI * creature.height * Math.cos(p * Math.PI)) / creature.span;
+    creature.object.rotation.z = Math.atan(slope);
+    creature.object.rotation.y = -Math.atan((Math.PI * 2 * (index ? 2.4 : 5.5) * Math.cos(p * Math.PI * 2)) / creature.span);
+    creature.object.userData.tail.rotation.z = Math.sin(elapsed * (index ? 5.5 : 2.4) + index) * (index ? 0.18 : 0.1);
+  });
+}
+
 const shardMaterial = new THREE.MeshStandardMaterial({
   color: "#ffefad",
   emissive: "#e5bb58",
@@ -350,11 +476,16 @@ const shardMaterial = new THREE.MeshStandardMaterial({
   metalness: .28,
   roughness: .2,
 });
-const shardPositions = [
-  [-12.5, 1.0, -7.5], [-10.5, 1.0, 9.0], [5.8, 1.2, 2.0],
-  [12.5, 1.0, 9.5], [8.0, 1.0, -11.0], [24.5, 5.0, -14.0], [-25.0, -.4, 12.0]
+const shardSpawns = [
+  { position: [-12.5, 1.0, -7.5], hint: "主岛西南草坡" },
+  { position: [-10.5, 1.0, 9.0], hint: "钟楼西侧林缘" },
+  { position: [3.0, 1.15, 2.1], hint: "集市外的草地" },
+  { position: [12.5, 1.0, 9.5], hint: "主岛东北高地" },
+  { position: [8.0, 1.0, -11.0], hint: "蓝顶小屋后的坡地" },
+  { position: [28.2, 4.9, -18.0], hint: "风车岛外缘" },
+  { position: [-27.2, -0.55, 9.6], hint: "西侧花园岛" },
 ];
-const shards = shardPositions.map((p, index) => {
+const shards = shardSpawns.map(({ position: p, hint }, index) => {
   const g = new THREE.Group();
   const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(.42, 0), shardMaterial);
   crystal.scale.y = 1.55;
@@ -364,10 +495,28 @@ const shards = shardPositions.map((p, index) => {
     new THREE.MeshBasicMaterial({ color: "#ffe99a", transparent: true, opacity: .48 })
   );
   halo.rotation.x = Math.PI / 2;
-  g.add(crystal, halo);
+  const beacon = new THREE.Mesh(
+    new THREE.CylinderGeometry(.08, .42, 4.8, 16, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: "#fff4a9",
+      transparent: true,
+      opacity: .16,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    })
+  );
+  beacon.position.y = 2.25;
+  const upperRing = halo.clone();
+  upperRing.material = halo.material.clone();
+  upperRing.position.y = 1.35;
+  upperRing.scale.setScalar(.7);
+  g.add(crystal, halo, beacon, upperRing);
   g.position.set(...p);
   g.userData.index = index;
   g.userData.baseY = p[1];
+  g.userData.hint = hint;
+  g.userData.beacon = beacon;
+  g.userData.upperRing = upperRing;
   world.add(g);
   return g;
 });
@@ -439,7 +588,7 @@ loader.load(
     heroRoot.remove(heroVisual);
     heroVisual = gltf.scene;
     heroVisual.scale.setScalar(.018);
-    heroVisual.rotation.y = Math.PI;
+    heroVisual.rotation.y = 0;
     heroVisual.traverse((obj) => {
       if (obj.isMesh) {
         obj.castShadow = true;
@@ -482,6 +631,7 @@ const state = {
   yaw: -0.15,
   pitch: .27,
   distance: 10.8,
+  cameraAvoidanceOffset: 0,
   dragging: false,
   pointerX: 0,
   pointerY: 0,
@@ -514,15 +664,65 @@ function groundAt(x, z) {
 }
 
 const colliders = [
-  { x: -8.5, z: -3.8, r: 3.0 },
-  { x: 3.6, z: -8.3, r: 2.6 },
-  { x: 9.8, z: 3.8, r: 2.9 },
-  { x: -1.8, z: 6.6, r: 3.4 },
-  { x: 24.8, z: -15.2, r: 3.1 },
+  { x: -8.5, z: -3.8, r: 3.25 },
+  { x: 3.6, z: -8.3, r: 2.95 },
+  { x: 9.8, z: 3.8, r: 3.15 },
+  { x: -1.8, z: 6.6, r: 3.65 },
+  { x: 24.8, z: -15.2, r: 3.45 },
+  { x: 5.5, z: 1.6, r: 2.1 },
+  { x: -14, z: 5, r: 1.1 },
+  { x: -13, z: -9, r: .95 },
+  { x: -7, z: 11.8, r: .9 },
+  { x: 12.5, z: -5.5, r: 1.0 },
+  { x: 14.2, z: 9.4, r: 1.2 },
+  { x: 6.4, z: 12.2, r: .85 },
+  { x: -15, z: -1, r: .85 },
+  { x: 28, z: -17.5, r: .95 },
+  { x: 22, z: -11.5, r: .85 },
+  { x: -25, z: 12, r: 1.0 },
 ];
 
 function blocked(x, z) {
   return colliders.some((c) => Math.hypot(x - c.x, z - c.z) < c.r);
+}
+
+const cameraObstacles = [
+  { center: new THREE.Vector3(-8.5, 3.2, -3.8), radius: 3.55 },
+  { center: new THREE.Vector3(3.6, 3.0, -8.3), radius: 3.25 },
+  { center: new THREE.Vector3(9.8, 3.1, 3.8), radius: 3.45 },
+  { center: new THREE.Vector3(-1.8, 5.7, 6.6), radius: 4.5 },
+  { center: new THREE.Vector3(24.8, 8.2, -15.2), radius: 4.1 },
+  { center: new THREE.Vector3(5.5, 2.35, 1.6), radius: 2.55 },
+];
+
+[
+  [-14, 0, 5, 1.0], [-13, 0, -9, .82], [-7, 0, 11.8, .72], [12.5, 0, -5.5, .85],
+  [14.2, 0, 9.4, 1.1], [6.4, 0, 12.2, .68], [-15, 0, -1, .7],
+  [28, 3.6, -17.5, .78], [22, 3.6, -11.5, .68], [-25, -1.7, 12, .82],
+].forEach(([x, y, z, scale]) => {
+  cameraObstacles.push({
+    center: new THREE.Vector3(x, y + 4.15 * scale, z),
+    radius: 1.75 * scale,
+  });
+});
+
+function cameraClearance(start, end) {
+  const segment = end.clone().sub(start);
+  const length = segment.length();
+  if (length < .001) return length;
+  const direction = segment.multiplyScalar(1 / length);
+  let nearest = length;
+  for (const obstacle of cameraObstacles) {
+    const toCenter = obstacle.center.clone().sub(start);
+    const projection = toCenter.dot(direction);
+    if (projection <= 0 || projection >= nearest + obstacle.radius) continue;
+    const perpendicularSq = toCenter.lengthSq() - projection * projection;
+    const radiusSq = obstacle.radius * obstacle.radius;
+    if (perpendicularSq >= radiusSq) continue;
+    const hit = projection - Math.sqrt(radiusSq - perpendicularSq);
+    if (hit > .2) nearest = Math.min(nearest, hit);
+  }
+  return nearest;
 }
 
 function collectNearby() {
@@ -540,6 +740,15 @@ function collectNearby() {
       world.remove(shard);
       if (state.collected === shards.length) {
         window.setTimeout(() => document.querySelector("#completeCard").classList.add("visible"), 550);
+      } else if (state.collected === shards.length - 1) {
+        const remaining = shards.find((item) => item.parent);
+        if (remaining) {
+          window.setTimeout(() => {
+            prompt.textContent = `最后一枚星屑：${remaining.userData.hint}`;
+            prompt.classList.add("visible");
+            window.setTimeout(() => prompt.classList.remove("visible"), 4200);
+          }, 1650);
+        }
       }
     }
   }
@@ -603,12 +812,39 @@ function jump() {
 function updateCamera(dt) {
   const target = heroRoot.position.clone().add(new THREE.Vector3(0, 1.55, 0));
   const cp = Math.cos(state.pitch);
-  const desired = target.clone().add(new THREE.Vector3(
-    Math.sin(state.yaw) * cp * state.distance,
-    Math.sin(state.pitch) * state.distance + 1.0,
-    Math.cos(state.yaw) * cp * state.distance
+  const makeCandidate = (yawOffset, distance = state.distance) => target.clone().add(new THREE.Vector3(
+    Math.sin(state.yaw + yawOffset) * cp * distance,
+    Math.sin(state.pitch) * distance + 1.0,
+    Math.cos(state.yaw + yawOffset) * cp * distance
   ));
-  camera.position.lerp(desired, 1 - Math.pow(.001, dt));
+
+  const sampleOffsets = [state.cameraAvoidanceOffset, 0, .52, -.52, .96, -.96];
+  let bestOffset = sampleOffsets[0];
+  let bestClearance = cameraClearance(target, makeCandidate(bestOffset));
+  for (const offset of sampleOffsets.slice(1)) {
+    const clearance = cameraClearance(target, makeCandidate(offset));
+    const preferencePenalty = Math.abs(offset) * .16;
+    if (clearance - preferencePenalty > bestClearance + .2) {
+      bestOffset = offset;
+      bestClearance = clearance;
+    }
+  }
+
+  const directClearance = cameraClearance(target, makeCandidate(0));
+  const desiredOffset = directClearance >= state.distance * .96 ? 0 : bestOffset;
+  state.cameraAvoidanceOffset = THREE.MathUtils.damp(
+    state.cameraAvoidanceOffset,
+    desiredOffset,
+    desiredOffset === 0 ? 3.5 : 7.5,
+    dt
+  );
+
+  const fullCandidate = makeCandidate(state.cameraAvoidanceOffset);
+  const clearance = cameraClearance(target, fullCandidate);
+  const safeDistance = Math.min(state.distance, Math.max(3.25, clearance - .6));
+  const desired = makeCandidate(state.cameraAvoidanceOffset, safeDistance);
+  if (safeDistance < state.distance * .58) desired.y += 1.15;
+  camera.position.lerp(desired, 1 - Math.pow(.00035, dt));
   camera.lookAt(target);
 }
 
@@ -703,15 +939,21 @@ function animate() {
   const elapsed = clock.elapsedTime;
   updateHero(dt, elapsed);
   updateCamera(dt);
+  updateSkyCreatures(elapsed);
   windmill.userData.blades.rotation.z = elapsed * .28;
   shards.forEach((shard, index) => {
     if (!shard.parent) return;
     shard.rotation.y = elapsed * .8 + index;
     shard.position.y = shard.userData.baseY + Math.sin(elapsed * 1.7 + index) * .18;
+    shard.userData.beacon.material.opacity = .12 + (Math.sin(elapsed * 2.2 + index) + 1) * .055;
+    shard.userData.upperRing.rotation.z = elapsed * .55 + index;
+    shard.userData.upperRing.scale.setScalar(.66 + Math.sin(elapsed * 1.9 + index) * .08);
   });
   scene.children.forEach((obj) => {
     if (obj.userData?.speed) obj.position.x += Math.sin(elapsed * .05 + obj.position.z) * obj.userData.speed * dt;
   });
+  cloudSea.rotation.y = elapsed * .0018;
+  cloudFloor.rotation.z = -elapsed * .0009;
   particles.rotation.y = elapsed * .015;
   composer.render();
   requestAnimationFrame(animate);
