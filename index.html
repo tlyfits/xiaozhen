@@ -45,11 +45,35 @@
       <section id="questPanel" class="quest-panel" aria-live="polite">
         <span class="eyebrow">当前旅程</span>
         <h2>唤醒岛屿的回响</h2>
-        <p>收集散落在小镇里的星辉碎片</p>
+        <p>收集星辉碎片，击退游荡的云蚀兽</p>
         <div class="progress-row">
           <div class="progress-track"><span id="progressFill"></span></div>
           <strong><span id="shardCount">0</span> / 7</strong>
         </div>
+      </section>
+
+      <section id="combatHud" class="combat-hud" aria-label="角色战斗状态">
+        <div class="combat-heading">
+          <span>LV.<strong id="levelValue">1</strong></span>
+          <small>星辉旅者</small>
+          <span class="attack-readout">攻击 <strong id="attackValue">18</strong></span>
+        </div>
+        <div class="stat-line">
+          <span>生命</span>
+          <div class="stat-track health"><i id="healthFill"></i></div>
+          <strong><span id="healthValue">100</span>/<span id="maxHealthValue">100</span></strong>
+        </div>
+        <div class="stat-line">
+          <span>经验</span>
+          <div class="stat-track experience"><i id="xpFill"></i></div>
+          <strong><span id="xpValue">0</span>/<span id="xpNextValue">100</span></strong>
+        </div>
+        <p><span id="enemyCount">0</span> 只云蚀兽仍在游荡</p>
+      </section>
+
+      <section id="targetHud" class="target-hud" aria-hidden="true">
+        <div><strong id="targetName">云蚀兽</strong><span>LV.<i id="targetLevel">1</i></span></div>
+        <div class="target-track"><i id="targetHealthFill"></i></div>
       </section>
 
       <div id="reticle" class="reticle" aria-hidden="true"><span></span></div>
@@ -59,23 +83,29 @@
         <span><kbd>WASD</kbd> 移动</span>
         <span><kbd>Shift</kbd> 奔跑</span>
         <span><kbd>Space</kbd> 跳跃</span>
+        <span><kbd>F</kbd> 攻击</span>
+        <span><kbd>Q</kbd> 星辉爆发</span>
         <span><i class="mouse-icon"></i> 旋转视角</span>
       </div>
 
       <div id="touchControls" class="touch-controls" aria-hidden="true">
         <div id="joystick" class="joystick"><span id="joystickKnob"></span></div>
-        <button id="jumpButton" class="jump-button" type="button" aria-label="跳跃">跃</button>
+        <div class="touch-actions">
+          <button id="skillButton" class="skill-button" type="button" aria-label="释放星辉爆发">技</button>
+          <button id="jumpButton" class="jump-button" type="button" aria-label="跳跃">跃</button>
+          <button id="attackButton" class="attack-button" type="button" aria-label="普通攻击">击</button>
+        </div>
       </div>
 
       <section id="startScreen" class="start-screen">
         <div class="start-orbit orbit-one" aria-hidden="true"></div>
         <div class="start-orbit orbit-two" aria-hidden="true"></div>
         <div class="start-card">
-          <p class="chapter">CHAPTER I · THE FIRST ISLAND</p>
-          <h1>在云海之上，<br /><em>找回小镇的名字。</em></h1>
+          <p class="chapter">CHAPTER I · THE AWAKENING ISLES</p>
+          <h1>在云海之上，<br /><em>成为星辉守望者。</em></h1>
           <p class="intro">
-            古老钟楼已经沉睡了很久。跟随星辉留下的轨迹，穿过风车、屋顶与花园，
-            让漂浮的岛屿重新亮起来。
+            十七座浮空岛被云蚀侵染。穿过风车、古镇与荒原，收集星辉、击退怪物并不断成长，
+            让沉睡的群岛重新亮起来。
           </p>
           <button id="startButton" class="start-button" type="button">
             <span>进入云屿镇</span><i>→</i>
@@ -96,6 +126,8 @@
           <article><kbd>WASD</kbd><h3>行走</h3><p>以当前镜头方向在岛屿上移动。</p></article>
           <article><kbd>Shift</kbd><h3>奔跑</h3><p>按住奔跑，狐狸会切换为跑步动作。</p></article>
           <article><kbd>Space</kbd><h3>跳跃</h3><p>跨过台阶，也可以跳上低矮屋顶。</p></article>
+          <article><kbd>F</kbd><h3>星刃</h3><p>攻击面前最近的云蚀兽，攻击力随等级提高。</p></article>
+          <article><kbd>Q</kbd><h3>星辉爆发</h3><p>释放范围技能；升级后伤害和作用范围都会增强。</p></article>
           <article><span class="drag-symbol">↔</span><h3>观察</h3><p>拖动鼠标旋转，滚轮调整镜头距离。</p></article>
         </div>
         <p class="credit-note">
@@ -107,8 +139,8 @@
       <section id="completeCard" class="complete-card">
         <span class="eyebrow">岛屿回响已恢复</span>
         <h2>云屿镇记住了你</h2>
-        <p>核心岛屿探索完成。钟楼深处还有一扇没有打开的门……</p>
-        <button id="continueButton" type="button">继续漫游</button>
+        <p>七枚星辉碎片已经归位，但更远的群岛仍有云蚀兽盘踞。继续战斗与升级吧。</p>
+        <button id="continueButton" type="button">继续远征</button>
       </section>
     </main>
     <script type="module" src="./game.js"></script>

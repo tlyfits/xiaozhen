@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
@@ -12,21 +13,21 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.32;
+renderer.toneMappingExposure = 0.9;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#9edcff");
-scene.fog = new THREE.FogExp2("#dff5ff", 0.0075);
+scene.background = new THREE.Color("#8fb9ce");
+scene.fog = new THREE.FogExp2("#b9d0d7", 0.0068);
 
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 500);
 camera.position.set(12, 9, 17);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.28, 0.72, 0.9);
-bloom.threshold = 0.86;
-bloom.strength = 0.24;
-bloom.radius = 0.56;
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.1, 0.38, 1.18);
+bloom.threshold = 1.18;
+bloom.strength = 0.1;
+bloom.radius = 0.38;
 composer.addPass(bloom);
 
 const clock = new THREE.Clock();
@@ -34,21 +35,21 @@ const world = new THREE.Group();
 scene.add(world);
 
 const mats = {
-  grass: new THREE.MeshStandardMaterial({ color: "#87bd62", roughness: 0.94 }),
-  grassLight: new THREE.MeshStandardMaterial({ color: "#abd77d", roughness: 0.9 }),
-  rock: new THREE.MeshStandardMaterial({ color: "#697b89", roughness: 1, flatShading: true }),
-  rockLight: new THREE.MeshStandardMaterial({ color: "#90a2ad", roughness: 1, flatShading: true }),
-  plaster: new THREE.MeshStandardMaterial({ color: "#fff0ca", roughness: 0.86 }),
-  plasterWarm: new THREE.MeshStandardMaterial({ color: "#f4c98b", roughness: 0.84 }),
+  grass: new THREE.MeshStandardMaterial({ color: "#708d59", roughness: 0.96 }),
+  grassLight: new THREE.MeshStandardMaterial({ color: "#91aa6c", roughness: 0.93 }),
+  rock: new THREE.MeshStandardMaterial({ color: "#64727a", roughness: 1, flatShading: true }),
+  rockLight: new THREE.MeshStandardMaterial({ color: "#829099", roughness: 1, flatShading: true }),
+  plaster: new THREE.MeshStandardMaterial({ color: "#dbcba8", roughness: 0.9 }),
+  plasterWarm: new THREE.MeshStandardMaterial({ color: "#c9a36f", roughness: 0.88 }),
   timber: new THREE.MeshStandardMaterial({ color: "#68452f", roughness: 0.82 }),
   timberLight: new THREE.MeshStandardMaterial({ color: "#936640", roughness: 0.82 }),
-  roof: new THREE.MeshStandardMaterial({ color: "#d46858", roughness: 0.88 }),
-  roofBlue: new THREE.MeshStandardMaterial({ color: "#4f91a8", roughness: 0.84 }),
-  gold: new THREE.MeshStandardMaterial({ color: "#f2c85f", metalness: 0.45, roughness: 0.3 }),
-  window: new THREE.MeshStandardMaterial({ color: "#fff2a5", emissive: "#ffb93f", emissiveIntensity: 1.5, roughness: 0.22 }),
-  leaf: new THREE.MeshStandardMaterial({ color: "#4f9b55", roughness: 0.9, flatShading: true }),
-  leafGold: new THREE.MeshStandardMaterial({ color: "#e8ad54", roughness: 0.88, flatShading: true }),
-  cloud: new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.46, depthWrite: false }),
+  roof: new THREE.MeshStandardMaterial({ color: "#a95248", roughness: 0.9 }),
+  roofBlue: new THREE.MeshStandardMaterial({ color: "#4a7888", roughness: 0.88 }),
+  gold: new THREE.MeshStandardMaterial({ color: "#c79a43", metalness: 0.32, roughness: 0.42 }),
+  window: new THREE.MeshStandardMaterial({ color: "#e8d58f", emissive: "#d89232", emissiveIntensity: 0.72, roughness: 0.36 }),
+  leaf: new THREE.MeshStandardMaterial({ color: "#466f48", roughness: 0.94, flatShading: true }),
+  leafGold: new THREE.MeshStandardMaterial({ color: "#b68143", roughness: 0.92, flatShading: true }),
+  cloud: new THREE.MeshBasicMaterial({ color: "#d7e1df", transparent: true, opacity: 0.32, depthWrite: false }),
 };
 
 const shadow = (mesh, receive = true) => {
@@ -66,9 +67,9 @@ const box = (w, h, d, material, x = 0, y = 0, z = 0) => {
 const cylinder = (rt, rb, h, sides, material) =>
   shadow(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, sides), material));
 
-const ambient = new THREE.HemisphereLight("#fff8dc", "#78bad5", 3.15);
+const ambient = new THREE.HemisphereLight("#cfe2e7", "#536b68", 1.5);
 scene.add(ambient);
-const sun = new THREE.DirectionalLight("#fff0bd", 5.15);
+const sun = new THREE.DirectionalLight("#f2d29a", 2.4);
 sun.position.set(-30, 42, 18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -81,13 +82,53 @@ sun.shadow.bias = -0.00045;
 scene.add(sun);
 
 const sunDisc = new THREE.Mesh(
-  new THREE.SphereGeometry(4.8, 32, 16),
-  new THREE.MeshBasicMaterial({ color: "#fff0a6", fog: false })
+  new THREE.SphereGeometry(3.8, 32, 16),
+  new THREE.MeshBasicMaterial({ color: "#e6c77f", transparent: true, opacity: 0.88, fog: false })
 );
 sunDisc.position.set(-78, 43, -105);
 scene.add(sunDisc);
 
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(230, 32, 18),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: {
+      topColor: { value: new THREE.Color("#5f94b5") },
+      horizonColor: { value: new THREE.Color("#b9d0d8") },
+      lowerColor: { value: new THREE.Color("#c9d0c7") },
+    },
+    vertexShader: `
+      varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vWorldPosition;
+      uniform vec3 topColor;
+      uniform vec3 horizonColor;
+      uniform vec3 lowerColor;
+      void main() {
+        float h = normalize(vWorldPosition).y;
+        vec3 color = h > 0.0
+          ? mix(horizonColor, topColor, smoothstep(0.0, 0.78, h))
+          : mix(horizonColor, lowerColor, smoothstep(0.0, -0.36, h));
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+  })
+);
+scene.add(skyDome);
+
+const terrainSurfaces = [];
+const bridgeSurfaces = [];
+
 function createIsland(radiusX, radiusZ, topY, depth, x, z, material = mats.grass) {
+  terrainSurfaces.push({ x, z, radiusX: radiusX * 0.96, radiusZ: radiusZ * 0.96, y: topY });
   const group = new THREE.Group();
   group.position.set(x, topY, z);
   const top = cylinder(radiusX, radiusX * 0.97, 1.1, 48, material);
@@ -123,9 +164,30 @@ const mainIsland = createIsland(20, 17, 0, 14, 0, 0);
 const chapelIsland = createIsland(8.2, 7.2, 3.6, 9, 25, -15, mats.grassLight);
 const gardenIsland = createIsland(5.5, 5, -1.7, 7, -25, 12, mats.grass);
 
-function createCottage({ x, z, scale = 1, rotation = 0, roof = mats.roof, material = mats.plaster }) {
+const expandedIslandSpecs = [
+  { name: "北风原", x: 0, z: -39, rx: 19, rz: 15, y: 1.2, depth: 13, material: mats.grassLight },
+  { name: "晨曦岭", x: 35, z: -36, rx: 16, rz: 13, y: 1.6, depth: 12, material: mats.grass },
+  { name: "东境台地", x: 48, z: -3, rx: 18, rz: 14, y: 2.2, depth: 14, material: mats.grassLight },
+  { name: "晴雨庭", x: 40, z: 31, rx: 17, rz: 13, y: -0.6, depth: 12, material: mats.grass },
+  { name: "南星原", x: 6, z: 42, rx: 21, rz: 15, y: 1.0, depth: 15, material: mats.grassLight },
+  { name: "暮色谷", x: -34, z: 36, rx: 17, rz: 13, y: 0.4, depth: 13, material: mats.grass },
+  { name: "西风高地", x: -52, z: 8, rx: 19, rz: 15, y: 2.6, depth: 15, material: mats.grassLight },
+  { name: "灰石坡", x: -39, z: -28, rx: 17, rz: 13, y: -0.4, depth: 13, material: mats.grass },
+  { name: "极光台", x: -5, z: -69, rx: 20, rz: 14, y: 0.8, depth: 16, material: mats.grassLight },
+  { name: "远帆脊", x: 66, z: -57, rx: 19, rz: 14, y: 2.0, depth: 15, material: mats.grass },
+  { name: "云港", x: 79, z: 20, rx: 20, rz: 15, y: 0.6, depth: 16, material: mats.grassLight },
+  { name: "星落原", x: 20, z: 73, rx: 21, rz: 16, y: -0.8, depth: 17, material: mats.grass },
+  { name: "晚钟崖", x: -76, z: 40, rx: 20, rz: 15, y: 1.8, depth: 16, material: mats.grassLight },
+  { name: "沉霞岛", x: -72, z: -29, rx: 20, rz: 16, y: 0.2, depth: 17, material: mats.grass },
+];
+
+expandedIslandSpecs.forEach((island) => {
+  island.group = createIsland(island.rx, island.rz, island.y, island.depth, island.x, island.z, island.material);
+});
+
+function createCottage({ x, z, y = 0, scale = 1, rotation = 0, roof = mats.roof, material = mats.plaster }) {
   const g = new THREE.Group();
-  g.position.set(x, 0, z);
+  g.position.set(x, y, z);
   g.rotation.y = rotation;
   g.scale.setScalar(scale);
 
@@ -170,6 +232,17 @@ function createCottage({ x, z, scale = 1, rotation = 0, roof = mats.roof, materi
 createCottage({ x: -8.5, z: -3.8, scale: 1.0, rotation: 0.3 });
 createCottage({ x: 3.6, z: -8.3, scale: 0.88, rotation: -0.38, roof: mats.roofBlue, material: mats.plasterWarm });
 createCottage({ x: 9.8, z: 3.8, scale: 0.95, rotation: -1.75 });
+
+const expandedStructureSeeds = [
+  { x: -6, z: -40, y: 1.2, scale: 0.9, rotation: 0.5, roof: mats.roofBlue },
+  { x: 39, z: -37, y: 1.6, scale: 0.82, rotation: -0.8, roof: mats.roof },
+  { x: 52, z: -6, y: 2.2, scale: 0.94, rotation: 1.2, roof: mats.roofBlue },
+  { x: 8, z: 42, y: 1.0, scale: 0.88, rotation: 2.5, roof: mats.roof },
+  { x: -55, z: 7, y: 2.6, scale: 0.92, rotation: -1.4, roof: mats.roofBlue },
+  { x: 72, z: 20, y: 0.6, scale: 0.86, rotation: 0.2, roof: mats.roof },
+  { x: -76, z: 43, y: 1.8, scale: 0.9, rotation: 1.8, roof: mats.roofBlue },
+];
+expandedStructureSeeds.forEach((seed) => createCottage(seed));
 
 function createTower() {
   const g = new THREE.Group();
@@ -272,7 +345,31 @@ createTree(28, -17.5, .78, true, 3.6);
 createTree(22, -11.5, .68, false, 3.6);
 createTree(-25, 12, .82, true, -1.7);
 
+const expandedTreeSeeds = [];
+expandedIslandSpecs.forEach((island, islandIndex) => {
+  for (let treeIndex = 0; treeIndex < 3; treeIndex++) {
+    const angle = islandIndex * 1.73 + treeIndex * 2.17;
+    const radius = 0.38 + treeIndex * 0.13;
+    const seed = {
+      x: island.x + Math.cos(angle) * island.rx * radius,
+      z: island.z + Math.sin(angle) * island.rz * radius,
+      y: island.y,
+      scale: 0.7 + ((islandIndex + treeIndex) % 5) * 0.09,
+      gold: (islandIndex + treeIndex * 2) % 7 === 0,
+    };
+    expandedTreeSeeds.push(seed);
+    createTree(seed.x, seed.z, seed.scale, seed.gold, seed.y);
+  }
+});
+
 function createBridge(a, b, startY, endY) {
+  bridgeSurfaces.push({
+    a: new THREE.Vector2(a[0], a[1]),
+    b: new THREE.Vector2(b[0], b[1]),
+    ya: startY,
+    yb: endY,
+    width: 1.7,
+  });
   const start = new THREE.Vector3(a[0], startY, a[1]);
   const end = new THREE.Vector3(b[0], endY, b[1]);
   const delta = end.clone().sub(start);
@@ -292,6 +389,20 @@ function createBridge(a, b, startY, endY) {
 }
 createBridge([15.5, -7.8], [20.5, -11.2], 0.35, 3.95);
 createBridge([-18.5, 6], [-21, 9.5], -0.15, -1.25);
+createBridge([0, -16], [0, -24], 0.15, 1.35);
+createBridge([28.5, -20], [29.5, -25], 3.75, 1.75);
+createBridge([18, 0], [30, -1], 0.15, 2.35);
+createBridge([45, 10], [42, 18.5], 2.35, -0.45);
+createBridge([6, 16], [6, 27.5], 0.15, 1.15);
+createBridge([-27, 15], [-29, 24], -1.55, 0.55);
+createBridge([-30, 10], [-34, 9], -1.55, 2.75);
+createBridge([-16, -9], [-24, -18], 0.15, -0.25);
+createBridge([-3, -53], [-5, -55.5], 1.35, 0.95);
+createBridge([46, -44], [52, -49], 1.75, 2.15);
+createBridge([64, 2], [61, 12], 2.35, 0.75);
+createBridge([12, 56], [16, 58], 1.15, -0.65);
+createBridge([-49, 40], [-57, 40], 0.55, 1.95);
+createBridge([-55, -17], [-59, -22], -0.25, 0.35);
 
 function createMarketStall(x, z, rot) {
   const g = new THREE.Group();
@@ -344,41 +455,45 @@ for (let i = 0; i < 26; i++) {
 }
 
 const cloudSeaMaterial = new THREE.MeshBasicMaterial({
-  color: "#f8fdff",
+  color: "#d8e2df",
   transparent: true,
-  opacity: 0.72,
+  opacity: 0.42,
   depthWrite: false,
 });
-const cloudSea = new THREE.InstancedMesh(cloudGeometry, cloudSeaMaterial, 190);
+const cloudSeaCount = 176;
+const cloudSea = new THREE.InstancedMesh(cloudGeometry, cloudSeaMaterial, cloudSeaCount);
 const cloudDummy = new THREE.Object3D();
-for (let i = 0; i < 190; i++) {
+const cloudPalette = ["#d6e0de", "#c7d6d7", "#e0e0d5", "#bdced2"];
+for (let i = 0; i < cloudSeaCount; i++) {
   const angle = i * 2.39996;
-  const radius = 5 + Math.sqrt(i / 190) * 112;
+  const radius = 5 + Math.sqrt(i / cloudSeaCount) * 112;
   cloudDummy.position.set(
     Math.cos(angle) * radius,
-    -11.2 + Math.sin(i * 1.83) * 1.15,
+    -11.4 + Math.sin(i * 1.83) * 1.35,
     Math.sin(angle) * radius
   );
   cloudDummy.rotation.y = angle * 0.35;
-  cloudDummy.scale.set(5.2 + (i % 7) * 0.75, 1.35 + (i % 4) * 0.28, 4.1 + (i % 5) * 0.62);
+  cloudDummy.scale.set(5 + (i % 7) * 0.72, 1.18 + (i % 4) * 0.24, 3.9 + (i % 5) * 0.58);
   cloudDummy.updateMatrix();
   cloudSea.setMatrixAt(i, cloudDummy.matrix);
+  cloudSea.setColorAt(i, new THREE.Color(cloudPalette[i % cloudPalette.length]));
 }
 cloudSea.instanceMatrix.needsUpdate = true;
+cloudSea.instanceColor.needsUpdate = true;
 scene.add(cloudSea);
 
 const cloudFloor = new THREE.Mesh(
   new THREE.CircleGeometry(150, 64),
   new THREE.MeshBasicMaterial({
-    color: "#e9f9ff",
+    color: "#aebfc3",
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.16,
     depthWrite: false,
     side: THREE.DoubleSide,
   })
 );
 cloudFloor.rotation.x = -Math.PI / 2;
-cloudFloor.position.y = -13.1;
+cloudFloor.position.y = -13.5;
 scene.add(cloudFloor);
 
 const creatureMaterials = {
@@ -448,12 +563,8 @@ function createCloudCreature({ dolphin = false, scale = 1 }) {
   return g;
 }
 
-const skyCreatures = [
-  { object: createCloudCreature({ scale: 2.05 }), duration: 29, phase: 0.08, span: 104, baseY: -12.4, height: 24, z: -38 },
-  { object: createCloudCreature({ dolphin: true, scale: 0.86 }), duration: 15, phase: 0.06, span: 68, baseY: -11.5, height: 15, z: 28 },
-  { object: createCloudCreature({ dolphin: true, scale: 0.72 }), duration: 15, phase: 0.12, span: 68, baseY: -11.5, height: 13, z: 31 },
-  { object: createCloudCreature({ dolphin: true, scale: 0.62 }), duration: 15, phase: 0.18, span: 68, baseY: -11.5, height: 11, z: 25 },
-];
+// Creature slots stay intentionally empty until a model passes the project's art review.
+const skyCreatures = [];
 
 function updateSkyCreatures(elapsed) {
   skyCreatures.forEach((creature, index) => {
@@ -525,9 +636,9 @@ const particlesGeometry = new THREE.BufferGeometry();
 const particleCount = 320;
 const particleArray = new Float32Array(particleCount * 3);
 for (let i = 0; i < particleCount; i++) {
-  particleArray[i * 3] = (Math.random() - .5) * 90;
+  particleArray[i * 3] = (Math.random() - .5) * 220;
   particleArray[i * 3 + 1] = Math.random() * 35 - 8;
-  particleArray[i * 3 + 2] = (Math.random() - .5) * 90;
+  particleArray[i * 3 + 2] = (Math.random() - .5) * 220;
 }
 particlesGeometry.setAttribute("position", new THREE.BufferAttribute(particleArray, 3));
 const particles = new THREE.Points(
@@ -601,6 +712,7 @@ loader.load(
       actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
     });
     setAction("survey", .2);
+    initializeEnemies(gltf);
     loadingStatus.textContent = "岛屿已苏醒 · 100%";
     window.setTimeout(() => {
       document.querySelector("#startButton").classList.add("ready");
@@ -639,22 +751,28 @@ const state = {
   joyX: 0,
   joyY: 0,
   audioOn: true,
+  level: 1,
+  xp: 0,
+  xpNext: 100,
+  health: 100,
+  maxHealth: 100,
+  attack: 18,
+  skillPower: 38,
+  attackCooldown: 0,
+  skillCooldown: 0,
+  invulnerable: 0,
 };
 
 function groundAt(x, z) {
-  const main = (x * x) / (19.2 * 19.2) + (z * z) / (16.2 * 16.2);
-  if (main <= 1) return 0;
-  const chapel = ((x - 25) ** 2) / (7.7 ** 2) + ((z + 15) ** 2) / (6.7 ** 2);
-  if (chapel <= 1) return 3.6;
-  const garden = ((x + 25) ** 2) / (5.1 ** 2) + ((z - 12) ** 2) / (4.6 ** 2);
-  if (garden <= 1) return -1.7;
+  for (const surface of terrainSurfaces) {
+    const ellipse =
+      ((x - surface.x) ** 2) / (surface.radiusX ** 2) +
+      ((z - surface.z) ** 2) / (surface.radiusZ ** 2);
+    if (ellipse <= 1) return surface.y;
+  }
 
-  const bridges = [
-    { a: new THREE.Vector2(15.5, -7.8), b: new THREE.Vector2(20.5, -11.2), ya: .35, yb: 3.95, width: 1.7 },
-    { a: new THREE.Vector2(-18.5, 6), b: new THREE.Vector2(-21, 9.5), ya: -.15, yb: -1.25, width: 1.7 },
-  ];
   const p = new THREE.Vector2(x, z);
-  for (const bridge of bridges) {
+  for (const bridge of bridgeSurfaces) {
     const ab = bridge.b.clone().sub(bridge.a);
     const t = THREE.MathUtils.clamp(p.clone().sub(bridge.a).dot(ab) / ab.lengthSq(), 0, 1);
     const nearest = bridge.a.clone().add(ab.multiplyScalar(t));
@@ -681,9 +799,383 @@ const colliders = [
   { x: 22, z: -11.5, r: .85 },
   { x: -25, z: 12, r: 1.0 },
 ];
+expandedStructureSeeds.forEach((seed) => {
+  colliders.push({ x: seed.x, z: seed.z, r: 3.1 * seed.scale });
+});
+expandedTreeSeeds.forEach((seed) => {
+  colliders.push({ x: seed.x, z: seed.z, r: 1.05 * seed.scale });
+});
 
 function blocked(x, z) {
   return colliders.some((c) => Math.hypot(x - c.x, z - c.z) < c.r);
+}
+
+const enemies = [];
+const combatEffects = [];
+let enemiesInitialized = false;
+
+const enemySpawnConfigs = [
+  { x: 14, z: -12, level: 1 },
+  { x: -14, z: 10, level: 1 },
+  { x: 29, z: -13, level: 2 },
+  { x: -24, z: 11, level: 2 },
+  ...expandedIslandSpecs.map((island, index) => ({
+    x: island.x + Math.cos(index * 1.91) * island.rx * 0.34,
+    z: island.z + Math.sin(index * 1.91) * island.rz * 0.34,
+    level: Math.min(10, 2 + Math.floor(index * 0.68)),
+  })),
+  ...expandedIslandSpecs.filter((_, index) => index % 4 === 1).map((island, index) => ({
+    x: island.x - island.rx * (0.24 + index * 0.03),
+    z: island.z + island.rz * 0.24,
+    level: Math.min(10, 4 + index * 2),
+  })),
+];
+
+const combatHud = {
+  level: document.querySelector("#levelValue"),
+  attack: document.querySelector("#attackValue"),
+  health: document.querySelector("#healthValue"),
+  maxHealth: document.querySelector("#maxHealthValue"),
+  healthFill: document.querySelector("#healthFill"),
+  xp: document.querySelector("#xpValue"),
+  xpNext: document.querySelector("#xpNextValue"),
+  xpFill: document.querySelector("#xpFill"),
+  enemyCount: document.querySelector("#enemyCount"),
+  targetHud: document.querySelector("#targetHud"),
+  targetName: document.querySelector("#targetName"),
+  targetLevel: document.querySelector("#targetLevel"),
+  targetHealthFill: document.querySelector("#targetHealthFill"),
+  attackButton: document.querySelector("#attackButton"),
+  skillButton: document.querySelector("#skillButton"),
+};
+
+function enemyTitle(level) {
+  if (level >= 9) return "云蚀领主";
+  if (level >= 6) return "深影猎手";
+  if (level >= 3) return "云蚀兽";
+  return "幼生云蚀兽";
+}
+
+function setEnemyAction(enemy, name, fade = 0.16) {
+  const target =
+    enemy.actions[name] ||
+    enemy.actions[Object.keys(enemy.actions).find((key) => key.includes(name))];
+  if (!target || target === enemy.activeAction) return;
+  if (enemy.activeAction) enemy.activeAction.fadeOut(fade);
+  target.reset().fadeIn(fade).play();
+  enemy.activeAction = target;
+}
+
+function initializeEnemies(gltf) {
+  if (enemiesInitialized) return;
+  enemiesInitialized = true;
+
+  enemySpawnConfigs.forEach((config, index) => {
+    const root = new THREE.Group();
+    const visual = SkeletonUtils.clone(gltf.scene);
+    const scale = 0.0145 + Math.min(config.level, 10) * 0.00048;
+    visual.scale.setScalar(scale);
+    visual.traverse((object) => {
+      if (!object.isMesh) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const tinted = materials.map((source) => {
+        const material = source.clone();
+        if (material.color) material.color.lerp(new THREE.Color("#4c3858"), 0.68);
+        if (material.emissive) {
+          material.emissive.set("#351d47");
+          material.emissiveIntensity = config.level >= 7 ? 0.42 : 0.22;
+          material.userData.restingEmissive = material.emissiveIntensity;
+        }
+        material.roughness = Math.max(0.58, material.roughness ?? 0.7);
+        return material;
+      });
+      object.material = Array.isArray(object.material) ? tinted : tinted[0];
+    });
+    root.add(visual);
+
+    const ground = groundAt(config.x, config.z);
+    root.position.set(config.x, ground ?? 0, config.z);
+    root.rotation.y = index * 1.37;
+    world.add(root);
+
+    const enemy = {
+      root,
+      visual,
+      level: config.level,
+      name: enemyTitle(config.level),
+      maxHealth: 48 + config.level * 24,
+      health: 48 + config.level * 24,
+      attack: 6 + config.level * 2.4,
+      xp: 30 + config.level * 14,
+      mixer: new THREE.AnimationMixer(visual),
+      actions: {},
+      activeAction: null,
+      attackTimer: 0.4 + (index % 4) * 0.23,
+      hitFlash: 0,
+      alive: true,
+      deathTime: 0,
+      home: root.position.clone(),
+    };
+    gltf.animations.forEach((clip) => {
+      enemy.actions[clip.name.toLowerCase()] = enemy.mixer.clipAction(clip);
+    });
+    setEnemyAction(enemy, "survey", 0);
+    enemies.push(enemy);
+  });
+
+  updateCombatHud();
+}
+
+function livingEnemies() {
+  return enemies.filter((enemy) => enemy.alive);
+}
+
+function updateCombatHud() {
+  combatHud.level.textContent = state.level;
+  combatHud.attack.textContent = state.attack;
+  combatHud.health.textContent = Math.max(0, Math.round(state.health));
+  combatHud.maxHealth.textContent = state.maxHealth;
+  combatHud.healthFill.style.width = `${THREE.MathUtils.clamp(state.health / state.maxHealth, 0, 1) * 100}%`;
+  combatHud.xp.textContent = state.xp;
+  combatHud.xpNext.textContent = state.xpNext;
+  combatHud.xpFill.style.width = `${THREE.MathUtils.clamp(state.xp / state.xpNext, 0, 1) * 100}%`;
+  combatHud.enemyCount.textContent = livingEnemies().length;
+}
+
+function showWorldPrompt(message, duration = 1500) {
+  const prompt = document.querySelector("#prompt");
+  prompt.textContent = message;
+  prompt.classList.add("visible");
+  window.clearTimeout(showWorldPrompt.timer);
+  showWorldPrompt.timer = window.setTimeout(() => prompt.classList.remove("visible"), duration);
+}
+
+function createCombatEffect(position, color, radius, duration = 0.48, vertical = false) {
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  });
+  const geometry = vertical
+    ? new THREE.RingGeometry(radius * 0.58, radius * 0.72, 42, 1, -1.35, 2.7)
+    : new THREE.RingGeometry(radius * 0.72, radius, 56);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.copy(position);
+  mesh.position.y += vertical ? 1.05 : 0.12;
+  mesh.rotation.x = vertical ? 0 : -Math.PI / 2;
+  if (vertical) mesh.rotation.y = heroRoot.rotation.y;
+  scene.add(mesh);
+  combatEffects.push({ mesh, age: 0, duration, baseRadius: radius });
+}
+
+function flashEnemy(enemy) {
+  enemy.hitFlash = 0.16;
+  enemy.visual.traverse((object) => {
+    if (!object.isMesh) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => {
+      if (material.emissive) {
+        material.emissive.set("#efb4ff");
+        material.emissiveIntensity = 1.65;
+      }
+    });
+  });
+}
+
+function restoreEnemyTint(enemy) {
+  enemy.visual.traverse((object) => {
+    if (!object.isMesh) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => {
+      if (material.emissive) {
+        material.emissive.set("#351d47");
+        material.emissiveIntensity = material.userData.restingEmissive ?? 0.22;
+      }
+    });
+  });
+}
+
+function gainExperience(amount) {
+  state.xp += amount;
+  let levelsGained = 0;
+  while (state.xp >= state.xpNext) {
+    state.xp -= state.xpNext;
+    state.level += 1;
+    levelsGained += 1;
+    state.xpNext = Math.round(100 * Math.pow(1.24, state.level - 1));
+    state.maxHealth += 18;
+    state.health = state.maxHealth;
+    state.attack += 5;
+    state.skillPower += 11;
+  }
+  if (levelsGained) {
+    createCombatEffect(heroRoot.position, "#fff0a1", 4.2, 0.9);
+    showWorldPrompt(`等级提升 · LV.${state.level}　攻击与星辉技能已增强`, 2800);
+  }
+  updateCombatHud();
+}
+
+function defeatEnemy(enemy) {
+  if (!enemy.alive) return;
+  enemy.alive = false;
+  enemy.deathTime = 0;
+  setEnemyAction(enemy, "survey", 0.1);
+  createCombatEffect(enemy.root.position, "#b98ac8", 2.4, 0.72);
+  gainExperience(enemy.xp);
+  showWorldPrompt(`击退 ${enemy.name} · 获得 ${enemy.xp} 经验`);
+  updateCombatHud();
+}
+
+function damageEnemy(enemy, amount) {
+  if (!enemy?.alive) return;
+  enemy.health = Math.max(0, enemy.health - amount);
+  flashEnemy(enemy);
+  if (enemy.health <= 0) defeatEnemy(enemy);
+}
+
+function facingVector() {
+  return new THREE.Vector3(Math.sin(heroRoot.rotation.y), 0, Math.cos(heroRoot.rotation.y)).normalize();
+}
+
+function attack() {
+  if (!state.started || state.attackCooldown > 0) return;
+  state.attackCooldown = 0.46;
+  const forward = facingVector();
+  const origin = heroRoot.position.clone();
+  createCombatEffect(origin.clone().add(forward.clone().multiplyScalar(1.2)), "#f5d77b", 1.7, 0.34, true);
+
+  const target = livingEnemies()
+    .map((enemy) => {
+      const offset = enemy.root.position.clone().sub(origin);
+      offset.y = 0;
+      const distance = offset.length();
+      const facing = distance > 0 ? offset.normalize().dot(forward) : 1;
+      return { enemy, distance, facing };
+    })
+    .filter((candidate) => candidate.distance <= 3.25 && candidate.facing > 0.12)
+    .sort((a, b) => a.distance - b.distance)[0];
+
+  if (target) damageEnemy(target.enemy, state.attack);
+}
+
+function castSkill() {
+  if (!state.started || state.skillCooldown > 0) return;
+  state.skillCooldown = Math.max(4.5, 7.5 - state.level * 0.18);
+  const radius = Math.min(7.2, 4.7 + state.level * 0.22);
+  const damage = state.skillPower;
+  createCombatEffect(heroRoot.position, "#8fc8e2", radius, 0.82);
+
+  livingEnemies().forEach((enemy) => {
+    if (enemy.root.position.distanceTo(heroRoot.position) <= radius) {
+      damageEnemy(enemy, damage);
+    }
+  });
+}
+
+function damagePlayer(amount, source) {
+  if (state.invulnerable > 0 || !state.started) return;
+  state.invulnerable = 0.72;
+  state.health = Math.max(0, state.health - amount);
+  createCombatEffect(heroRoot.position, "#c9869a", 1.5, 0.38);
+  document.querySelector("#game").classList.add("damage-flash");
+  window.setTimeout(() => document.querySelector("#game").classList.remove("damage-flash"), 180);
+  updateCombatHud();
+
+  if (state.health <= 0) {
+    state.health = state.maxHealth;
+    state.invulnerable = 2.2;
+    heroRoot.position.set(0, 0.2, 13);
+    state.velocityY = 0;
+    showWorldPrompt(`被 ${source?.name ?? "云蚀"} 击倒 · 已在钟楼旁苏醒`, 2600);
+    updateCombatHud();
+  }
+}
+
+function updateEnemies(dt) {
+  let nearest = null;
+  let nearestDistance = Infinity;
+
+  enemies.forEach((enemy) => {
+    if (!enemy.alive) {
+      enemy.deathTime += dt;
+      enemy.root.scale.setScalar(Math.max(0.001, 1 - enemy.deathTime / 0.7));
+      enemy.root.position.y += dt * 0.35;
+      if (enemy.deathTime > 0.72 && enemy.root.parent) world.remove(enemy.root);
+      return;
+    }
+
+    enemy.attackTimer -= dt;
+    enemy.hitFlash -= dt;
+    if (enemy.hitFlash <= 0 && enemy.hitFlash + dt > 0) restoreEnemyTint(enemy);
+
+    const toHero = heroRoot.position.clone().sub(enemy.root.position);
+    toHero.y = 0;
+    const distance = toHero.length();
+    if (distance < nearestDistance) {
+      nearest = enemy;
+      nearestDistance = distance;
+    }
+
+    const detection = 10.5 + enemy.level * 0.7;
+    if (state.started && distance < detection) {
+      if (distance > 1.75) {
+        const direction = toHero.normalize();
+        const speed = 1.45 + enemy.level * 0.055;
+        const nextX = enemy.root.position.x + direction.x * speed * dt;
+        const nextZ = enemy.root.position.z + direction.z * speed * dt;
+        const nextGround = groundAt(nextX, nextZ);
+        if (nextGround !== null && !blocked(nextX, nextZ)) {
+          enemy.root.position.x = nextX;
+          enemy.root.position.z = nextZ;
+          enemy.root.position.y = nextGround;
+          enemy.root.rotation.y = Math.atan2(direction.x, direction.z);
+          setEnemyAction(enemy, distance > 5 ? "run" : "walk");
+        } else {
+          setEnemyAction(enemy, "survey", 0.25);
+        }
+      } else {
+        setEnemyAction(enemy, "survey", 0.2);
+        if (enemy.attackTimer <= 0) {
+          enemy.attackTimer = Math.max(0.72, 1.35 - enemy.level * 0.035);
+          damagePlayer(enemy.attack, enemy);
+        }
+      }
+    } else {
+      setEnemyAction(enemy, "survey", 0.28);
+    }
+    enemy.mixer.update(dt * (distance < 5 ? 1.08 : 0.82));
+  });
+
+  if (nearest && nearestDistance < 10) {
+    combatHud.targetHud.setAttribute("aria-hidden", "false");
+    combatHud.targetName.textContent = nearest.name;
+    combatHud.targetLevel.textContent = nearest.level;
+    combatHud.targetHealthFill.style.width = `${Math.max(0, nearest.health / nearest.maxHealth) * 100}%`;
+  } else {
+    combatHud.targetHud.setAttribute("aria-hidden", "true");
+  }
+}
+
+function updateCombatEffects(dt) {
+  for (let index = combatEffects.length - 1; index >= 0; index--) {
+    const effect = combatEffects[index];
+    effect.age += dt;
+    const progress = effect.age / effect.duration;
+    effect.mesh.scale.setScalar(0.72 + progress * 0.65);
+    effect.mesh.material.opacity = Math.max(0, (1 - progress) * 0.88);
+    effect.mesh.rotation.z += dt * 0.8;
+    if (progress >= 1) {
+      scene.remove(effect.mesh);
+      effect.mesh.geometry.dispose();
+      effect.mesh.material.dispose();
+      combatEffects.splice(index, 1);
+    }
+  }
 }
 
 const cameraObstacles = [
@@ -694,6 +1186,18 @@ const cameraObstacles = [
   { center: new THREE.Vector3(24.8, 8.2, -15.2), radius: 4.1 },
   { center: new THREE.Vector3(5.5, 2.35, 1.6), radius: 2.55 },
 ];
+expandedStructureSeeds.forEach((seed) => {
+  cameraObstacles.push({
+    center: new THREE.Vector3(seed.x, seed.y + 3.1 * seed.scale, seed.z),
+    radius: 3.45 * seed.scale,
+  });
+});
+expandedTreeSeeds.forEach((seed) => {
+  cameraObstacles.push({
+    center: new THREE.Vector3(seed.x, seed.y + 4.1 * seed.scale, seed.z),
+    radius: 1.75 * seed.scale,
+  });
+});
 
 [
   [-14, 0, 5, 1.0], [-13, 0, -9, .82], [-7, 0, 11.8, .72], [12.5, 0, -5.5, .85],
@@ -854,6 +1358,8 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     jump();
   }
+  if (!event.repeat && event.code === "KeyF") attack();
+  if (!event.repeat && event.code === "KeyQ") castSkill();
 });
 window.addEventListener("keyup", (event) => { state.keys[event.code] = false; });
 
@@ -911,6 +1417,8 @@ function resetJoystick() {
 joystick.addEventListener("pointerup", resetJoystick);
 joystick.addEventListener("pointercancel", resetJoystick);
 document.querySelector("#jumpButton").addEventListener("pointerdown", jump);
+document.querySelector("#attackButton").addEventListener("pointerdown", attack);
+document.querySelector("#skillButton").addEventListener("pointerdown", castSkill);
 
 document.querySelector("#startButton").addEventListener("click", () => {
   state.started = true;
@@ -937,7 +1445,12 @@ window.addEventListener("resize", resize);
 function animate() {
   const dt = Math.min(clock.getDelta(), .033);
   const elapsed = clock.elapsedTime;
+  state.attackCooldown = Math.max(0, state.attackCooldown - dt);
+  state.skillCooldown = Math.max(0, state.skillCooldown - dt);
+  state.invulnerable = Math.max(0, state.invulnerable - dt);
   updateHero(dt, elapsed);
+  updateEnemies(dt);
+  updateCombatEffects(dt);
   updateCamera(dt);
   updateSkyCreatures(elapsed);
   windmill.userData.blades.rotation.z = elapsed * .28;
@@ -955,6 +1468,9 @@ function animate() {
   cloudSea.rotation.y = elapsed * .0018;
   cloudFloor.rotation.z = -elapsed * .0009;
   particles.rotation.y = elapsed * .015;
+  if (combatHud.skillButton) {
+    combatHud.skillButton.textContent = state.skillCooldown > 0 ? Math.ceil(state.skillCooldown) : "技";
+  }
   composer.render();
   requestAnimationFrame(animate);
 }
