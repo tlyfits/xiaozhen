@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="浮空中世纪梦境小镇——可在浏览器中探索的第三人称 3D 核心岛屿 Demo。"
+    />
+    <meta name="theme-color" content="#171a22" />
+    <title>云屿镇 · The Isles of Luma</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="game" aria-label="云屿镇 3D 游戏">
+      <canvas id="world" aria-label="可交互的浮空中世纪梦境小镇"></canvas>
+
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="grain" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="云屿镇首页">
+          <span class="brand-mark">L</span>
+          <span>
+            <strong>云屿镇</strong>
+            <small>THE ISLES OF LUMA</small>
+          </span>
+        </a>
+        <div class="top-actions">
+          <button id="soundButton" class="icon-button" type="button" aria-label="切换环境声音">
+            <span class="sound-bars"><i></i><i></i><i></i></span>
+          </button>
+          <button id="helpButton" class="pill-button" type="button">操作指南</button>
+        </div>
+      </header>
+
+      <section id="questPanel" class="quest-panel" aria-live="polite">
+        <span class="eyebrow">当前旅程</span>
+        <h2>唤醒岛屿的回响</h2>
+        <p>收集散落在小镇里的星辉碎片</p>
+        <div class="progress-row">
+          <div class="progress-track"><span id="progressFill"></span></div>
+          <strong><span id="shardCount">0</span> / 7</strong>
+        </div>
+      </section>
+
+      <div id="reticle" class="reticle" aria-hidden="true"><span></span></div>
+      <div id="prompt" class="world-prompt" role="status"></div>
+
+      <div class="controls-hint">
+        <span><kbd>WASD</kbd> 移动</span>
+        <span><kbd>Shift</kbd> 奔跑</span>
+        <span><kbd>Space</kbd> 跳跃</span>
+        <span><i class="mouse-icon"></i> 旋转视角</span>
+      </div>
+
+      <div id="touchControls" class="touch-controls" aria-hidden="true">
+        <div id="joystick" class="joystick"><span id="joystickKnob"></span></div>
+        <button id="jumpButton" class="jump-button" type="button" aria-label="跳跃">跃</button>
+      </div>
+
+      <section id="startScreen" class="start-screen">
+        <div class="start-orbit orbit-one" aria-hidden="true"></div>
+        <div class="start-orbit orbit-two" aria-hidden="true"></div>
+        <div class="start-card">
+          <p class="chapter">CHAPTER I · THE FIRST ISLAND</p>
+          <h1>在云海之上，<br /><em>找回小镇的名字。</em></h1>
+          <p class="intro">
+            古老钟楼已经沉睡了很久。跟随星辉留下的轨迹，穿过风车、屋顶与花园，
+            让漂浮的岛屿重新亮起来。
+          </p>
+          <button id="startButton" class="start-button" type="button">
+            <span>进入云屿镇</span><i>→</i>
+          </button>
+          <p id="loadingStatus" class="loading-status">正在唤醒岛屿 · 0%</p>
+        </div>
+        <div class="start-footer">
+          <span>Three.js · WebGL</span>
+          <span>戴上耳机体验更佳</span>
+        </div>
+      </section>
+
+      <dialog id="helpDialog" class="help-dialog">
+        <button id="closeHelp" class="dialog-close" type="button" aria-label="关闭">×</button>
+        <span class="eyebrow">旅行手册</span>
+        <h2>如何探索云屿镇</h2>
+        <div class="guide-grid">
+          <article><kbd>WASD</kbd><h3>行走</h3><p>以当前镜头方向在岛屿上移动。</p></article>
+          <article><kbd>Shift</kbd><h3>奔跑</h3><p>按住奔跑，狐狸会切换为跑步动作。</p></article>
+          <article><kbd>Space</kbd><h3>跳跃</h3><p>跨过台阶，也可以跳上低矮屋顶。</p></article>
+          <article><span class="drag-symbol">↔</span><h3>观察</h3><p>拖动鼠标旋转，滚轮调整镜头距离。</p></article>
+        </div>
+        <p class="credit-note">
+          角色采用 Khronos glTF Sample Assets 的 Fox GLB。模型 CC0；绑定、动画与 glTF
+          转换按 CC BY 4.0 使用。
+        </p>
+      </dialog>
+
+      <section id="completeCard" class="complete-card">
+        <span class="eyebrow">岛屿回响已恢复</span>
+        <h2>云屿镇记住了你</h2>
+        <p>核心岛屿探索完成。钟楼深处还有一扇没有打开的门……</p>
+        <button id="continueButton" type="button">继续漫游</button>
+      </section>
+    </main>
+    <script type="module" src="/game.js"></script>
+  </body>
+</html>
