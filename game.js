@@ -650,6 +650,8 @@ scene.add(particles);
 const heroRoot = new THREE.Group();
 heroRoot.position.set(0, .05, 13.0);
 world.add(heroRoot);
+const heroActionPivot = new THREE.Group();
+heroRoot.add(heroActionPivot);
 
 function createFallbackHero() {
   const g = new THREE.Group();
@@ -681,7 +683,7 @@ function createFallbackHero() {
   tail.castShadow = true;
   g.add(body, head, muzzle, tail);
   g.userData.tail = tail;
-  heroRoot.add(g);
+  heroActionPivot.add(g);
   return g;
 }
 
@@ -696,7 +698,7 @@ const foxUrl = "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main
 loader.load(
   foxUrl,
   (gltf) => {
-    heroRoot.remove(heroVisual);
+    heroActionPivot.remove(heroVisual);
     heroVisual = gltf.scene;
     heroVisual.scale.setScalar(.018);
     heroVisual.rotation.y = 0;
@@ -706,7 +708,7 @@ loader.load(
         obj.receiveShadow = true;
       }
     });
-    heroRoot.add(heroVisual);
+    heroActionPivot.add(heroVisual);
     mixer = new THREE.AnimationMixer(heroVisual);
     gltf.animations.forEach((clip) => {
       actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
@@ -761,6 +763,13 @@ const state = {
   attackCooldown: 0,
   skillCooldown: 0,
   invulnerable: 0,
+  attackMotion: 0,
+  attackImpactDone: false,
+  pendingAttackTarget: null,
+  skillMotion: 0,
+  skillImpactDone: false,
+  hitStop: 0,
+  cameraShake: 0,
 };
 
 function groundAt(x, z) {
@@ -913,7 +922,11 @@ function initializeEnemies(gltf) {
       actions: {},
       activeAction: null,
       attackTimer: 0.4 + (index % 4) * 0.23,
+      attackMotion: 0,
+      attackImpactDone: false,
       hitFlash: 0,
+      hitReaction: 0,
+      knockback: new THREE.Vector3(),
       alive: true,
       deathTime: 0,
       home: root.position.clone(),
@@ -970,7 +983,70 @@ function createCombatEffect(position, color, radius, duration = 0.48, vertical =
   mesh.rotation.x = vertical ? 0 : -Math.PI / 2;
   if (vertical) mesh.rotation.y = heroRoot.rotation.y;
   scene.add(mesh);
-  combatEffects.push({ mesh, age: 0, duration, baseRadius: radius });
+  const effect = { kind: "ring", mesh, age: 0, duration, baseRadius: radius };
+  combatEffects.push(effect);
+  return effect;
+}
+
+function createImpactBurst(position, color = "#fff2a8", count = 22, force = 4.8) {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const velocities = [];
+  for (let index = 0; index < count; index++) {
+    const angle = Math.random() * Math.PI * 2;
+    const lift = .18 + Math.random() * .82;
+    const speed = force * (.45 + Math.random() * .75);
+    velocities.push(new THREE.Vector3(
+      Math.cos(angle) * speed,
+      lift * speed,
+      Math.sin(angle) * speed
+    ));
+  }
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color,
+    size: .13,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.position.copy(position).add(new THREE.Vector3(0, .9, 0));
+  scene.add(points);
+  combatEffects.push({ kind: "particles", mesh: points, velocities, age: 0, duration: .42 });
+}
+
+function createSlashEffect(position, forward) {
+  const center = position.clone().add(forward.clone().multiplyScalar(1.3));
+  const outer = createCombatEffect(center, "#ffd969", 1.86, .29, true);
+  outer.mesh.material.opacity = .96;
+  outer.mesh.scale.setScalar(.82);
+  const inner = createCombatEffect(center.clone().add(new THREE.Vector3(0, .04, 0)), "#fff8d2", 1.45, .2, true);
+  inner.mesh.material.opacity = 1;
+  inner.mesh.scale.setScalar(.78);
+}
+
+function createSkillImpact(position, radius) {
+  const first = createCombatEffect(position, "#8bd8ff", radius, .78);
+  first.mesh.material.opacity = .72;
+  const second = createCombatEffect(position.clone().add(new THREE.Vector3(0, .06, 0)), "#fff5c2", radius * .72, .58);
+  second.mesh.material.opacity = .92;
+
+  const beamMaterial = new THREE.MeshBasicMaterial({
+    color: "#b8e8ff",
+    transparent: true,
+    opacity: .22,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.48, 1.6, 8.5, 24, 1, true), beamMaterial);
+  beam.position.copy(position).add(new THREE.Vector3(0, 4.1, 0));
+  scene.add(beam);
+  combatEffects.push({ kind: "beam", mesh: beam, age: 0, duration: .62 });
+  createImpactBurst(position, "#b6ebff", 42, 7.2);
 }
 
 function flashEnemy(enemy) {
@@ -1031,9 +1107,17 @@ function defeatEnemy(enemy) {
   updateCombatHud();
 }
 
-function damageEnemy(enemy, amount) {
+function damageEnemy(enemy, amount, intensity = 1) {
   if (!enemy?.alive) return;
   enemy.health = Math.max(0, enemy.health - amount);
+  const push = enemy.root.position.clone().sub(heroRoot.position);
+  push.y = 0;
+  if (push.lengthSq() < .01) push.copy(facingVector());
+  enemy.knockback.add(push.normalize().multiplyScalar(4.8 * intensity));
+  enemy.hitReaction = Math.max(enemy.hitReaction, .2 + intensity * .08);
+  state.hitStop = Math.max(state.hitStop, .038 + intensity * .025);
+  state.cameraShake = Math.max(state.cameraShake, .1 + intensity * .13);
+  createImpactBurst(enemy.root.position, intensity > 1 ? "#b9ecff" : "#ffe58a", Math.round(16 + intensity * 9), 4.1 + intensity * 1.7);
   flashEnemy(enemy);
   if (enemy.health <= 0) defeatEnemy(enemy);
 }
@@ -1043,11 +1127,12 @@ function facingVector() {
 }
 
 function attack() {
-  if (!state.started || state.attackCooldown > 0) return;
+  if (!state.started || state.attackCooldown > 0 || state.skillMotion > 0) return;
   state.attackCooldown = 0.46;
+  state.attackMotion = .36;
+  state.attackImpactDone = false;
   const forward = facingVector();
   const origin = heroRoot.position.clone();
-  createCombatEffect(origin.clone().add(forward.clone().multiplyScalar(1.2)), "#f5d77b", 1.7, 0.34, true);
 
   const target = livingEnemies()
     .map((enemy) => {
@@ -1060,28 +1145,95 @@ function attack() {
     .filter((candidate) => candidate.distance <= 3.25 && candidate.facing > 0.12)
     .sort((a, b) => a.distance - b.distance)[0];
 
-  if (target) damageEnemy(target.enemy, state.attack);
+  state.pendingAttackTarget = target?.enemy ?? null;
 }
 
 function castSkill() {
-  if (!state.started || state.skillCooldown > 0) return;
+  if (!state.started || state.skillCooldown > 0 || state.attackMotion > 0) return;
   state.skillCooldown = Math.max(4.5, 7.5 - state.level * 0.18);
-  const radius = Math.min(7.2, 4.7 + state.level * 0.22);
-  const damage = state.skillPower;
-  createCombatEffect(heroRoot.position, "#8fc8e2", radius, 0.82);
+  state.skillMotion = .78;
+  state.skillImpactDone = false;
+  state.skillRadius = Math.min(7.2, 4.7 + state.level * 0.22);
+  createCombatEffect(heroRoot.position, "#6fbfe7", 1.25, .56);
+}
 
-  livingEnemies().forEach((enemy) => {
-    if (enemy.root.position.distanceTo(heroRoot.position) <= radius) {
-      damageEnemy(enemy, damage);
+function updateHeroCombatMotion(dt) {
+  if (state.attackMotion > 0) {
+    const duration = .36;
+    state.attackMotion = Math.max(0, state.attackMotion - dt);
+    const progress = 1 - state.attackMotion / duration;
+    if (progress < .3) {
+      const windup = progress / .3;
+      heroActionPivot.rotation.y = THREE.MathUtils.lerp(0, -.52, windup);
+      heroActionPivot.rotation.z = THREE.MathUtils.lerp(0, -.09, windup);
+      heroActionPivot.position.z = THREE.MathUtils.lerp(0, -.12, windup);
+      heroActionPivot.scale.set(1 + windup * .05, 1 - windup * .08, 1 + windup * .05);
+    } else if (progress < .58) {
+      const strike = (progress - .3) / .28;
+      const snap = 1 - Math.pow(1 - strike, 3);
+      heroActionPivot.rotation.y = THREE.MathUtils.lerp(-.52, .78, snap);
+      heroActionPivot.rotation.z = THREE.MathUtils.lerp(-.09, .1, snap);
+      heroActionPivot.position.z = Math.sin(strike * Math.PI) * .62;
+      heroActionPivot.scale.set(1 - strike * .05, 1 + strike * .08, 1 + strike * .12);
+    } else {
+      const recover = (progress - .58) / .42;
+      heroActionPivot.rotation.y = THREE.MathUtils.lerp(.78, 0, recover);
+      heroActionPivot.rotation.z = THREE.MathUtils.lerp(.1, 0, recover);
+      heroActionPivot.position.z = THREE.MathUtils.lerp(.18, 0, recover);
+      heroActionPivot.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 22));
     }
-  });
+
+    if (!state.attackImpactDone && progress >= .43) {
+      state.attackImpactDone = true;
+      const forward = facingVector();
+      createSlashEffect(heroRoot.position, forward);
+      const target = state.pendingAttackTarget;
+      if (target?.alive && target.root.position.distanceTo(heroRoot.position) <= 3.65) {
+        damageEnemy(target, state.attack, 1);
+      } else {
+        state.cameraShake = Math.max(state.cameraShake, .045);
+      }
+    }
+  } else if (state.skillMotion > 0) {
+    const duration = .78;
+    state.skillMotion = Math.max(0, state.skillMotion - dt);
+    const progress = 1 - state.skillMotion / duration;
+    const charge = Math.min(1, progress / .46);
+    heroActionPivot.position.y = Math.sin(charge * Math.PI) * .22 - charge * .08;
+    heroActionPivot.rotation.y = progress < .46
+      ? -charge * .75
+      : THREE.MathUtils.lerp(-.75, Math.PI * 2, (progress - .46) / .54);
+    const pulse = 1 + Math.sin(progress * Math.PI * 4) * .045;
+    heroActionPivot.scale.set(pulse, 1 / pulse, pulse);
+
+    if (!state.skillImpactDone && progress >= .48) {
+      state.skillImpactDone = true;
+      createSkillImpact(heroRoot.position, state.skillRadius);
+      state.cameraShake = Math.max(state.cameraShake, .46);
+      livingEnemies().forEach((enemy) => {
+        if (enemy.root.position.distanceTo(heroRoot.position) <= state.skillRadius) {
+          damageEnemy(enemy, state.skillPower, 1.75);
+        }
+      });
+    }
+  } else {
+    heroActionPivot.position.lerp(new THREE.Vector3(), Math.min(1, dt * 18));
+    heroActionPivot.rotation.x = THREE.MathUtils.damp(heroActionPivot.rotation.x, 0, 18, dt);
+    heroActionPivot.rotation.y = THREE.MathUtils.damp(heroActionPivot.rotation.y, 0, 18, dt);
+    heroActionPivot.rotation.z = THREE.MathUtils.damp(heroActionPivot.rotation.z, 0, 18, dt);
+    heroActionPivot.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 18));
+    state.pendingAttackTarget = null;
+  }
 }
 
 function damagePlayer(amount, source) {
   if (state.invulnerable > 0 || !state.started) return;
   state.invulnerable = 0.72;
   state.health = Math.max(0, state.health - amount);
+  state.hitStop = Math.max(state.hitStop, .055);
+  state.cameraShake = Math.max(state.cameraShake, .26);
   createCombatEffect(heroRoot.position, "#c9869a", 1.5, 0.38);
+  createImpactBurst(heroRoot.position, "#efa6d5", 24, 5.2);
   document.querySelector("#game").classList.add("damage-flash");
   window.setTimeout(() => document.querySelector("#game").classList.remove("damage-flash"), 180);
   updateCombatHud();
@@ -1112,6 +1264,28 @@ function updateEnemies(dt) {
     enemy.attackTimer -= dt;
     enemy.hitFlash -= dt;
     if (enemy.hitFlash <= 0 && enemy.hitFlash + dt > 0) restoreEnemyTint(enemy);
+    enemy.hitReaction = Math.max(0, enemy.hitReaction - dt);
+    if (enemy.knockback.lengthSq() > .0025) {
+      const knockX = enemy.root.position.x + enemy.knockback.x * dt;
+      const knockZ = enemy.root.position.z + enemy.knockback.z * dt;
+      const knockGround = groundAt(knockX, knockZ);
+      if (knockGround !== null && !blocked(knockX, knockZ)) {
+        enemy.root.position.x = knockX;
+        enemy.root.position.z = knockZ;
+        enemy.root.position.y = knockGround;
+      }
+      enemy.knockback.multiplyScalar(Math.exp(-8.5 * dt));
+    }
+    if (enemy.hitReaction > 0) {
+      const kick = Math.sin((enemy.hitReaction / .28) * Math.PI);
+      enemy.root.scale.set(1 + kick * .14, 1 - kick * .18, 1 + kick * .14);
+      enemy.root.rotation.z = kick * .12;
+    } else {
+      enemy.root.scale.x = THREE.MathUtils.damp(enemy.root.scale.x, 1, 18, dt);
+      enemy.root.scale.y = THREE.MathUtils.damp(enemy.root.scale.y, 1, 18, dt);
+      enemy.root.scale.z = THREE.MathUtils.damp(enemy.root.scale.z, 1, 18, dt);
+      enemy.root.rotation.z = THREE.MathUtils.damp(enemy.root.rotation.z, 0, 18, dt);
+    }
 
     const toHero = heroRoot.position.clone().sub(enemy.root.position);
     toHero.y = 0;
@@ -1122,7 +1296,23 @@ function updateEnemies(dt) {
     }
 
     const detection = 10.5 + enemy.level * 0.7;
-    if (state.started && distance < detection) {
+    if (enemy.attackMotion > 0) {
+      const attackDuration = .38;
+      enemy.attackMotion = Math.max(0, enemy.attackMotion - dt);
+      const attackProgress = 1 - enemy.attackMotion / attackDuration;
+      const thrust = attackProgress < .48
+        ? -Math.sin(attackProgress / .48 * Math.PI * .5) * .18
+        : Math.sin((attackProgress - .48) / .52 * Math.PI) * .72;
+      enemy.visual.position.z = thrust;
+      enemy.visual.rotation.x = Math.sin(attackProgress * Math.PI) * -.16;
+      if (!enemy.attackImpactDone && attackProgress >= .55) {
+        enemy.attackImpactDone = true;
+        createCombatEffect(enemy.root.position.clone().add(toHero.clone().normalize().multiplyScalar(.8)), "#d69bd8", 1.05, .24, true);
+        if (distance <= 2.25) damagePlayer(enemy.attack, enemy);
+      }
+    } else if (state.started && distance < detection) {
+      enemy.visual.position.z = THREE.MathUtils.damp(enemy.visual.position.z, 0, 18, dt);
+      enemy.visual.rotation.x = THREE.MathUtils.damp(enemy.visual.rotation.x, 0, 18, dt);
       if (distance > 1.75) {
         const direction = toHero.normalize();
         const speed = 1.45 + enemy.level * 0.055;
@@ -1142,10 +1332,13 @@ function updateEnemies(dt) {
         setEnemyAction(enemy, "survey", 0.2);
         if (enemy.attackTimer <= 0) {
           enemy.attackTimer = Math.max(0.72, 1.35 - enemy.level * 0.035);
-          damagePlayer(enemy.attack, enemy);
+          enemy.attackMotion = .38;
+          enemy.attackImpactDone = false;
         }
       }
     } else {
+      enemy.visual.position.z = THREE.MathUtils.damp(enemy.visual.position.z, 0, 18, dt);
+      enemy.visual.rotation.x = THREE.MathUtils.damp(enemy.visual.rotation.x, 0, 18, dt);
       setEnemyAction(enemy, "survey", 0.28);
     }
     enemy.mixer.update(dt * (distance < 5 ? 1.08 : 0.82));
@@ -1166,9 +1359,27 @@ function updateCombatEffects(dt) {
     const effect = combatEffects[index];
     effect.age += dt;
     const progress = effect.age / effect.duration;
-    effect.mesh.scale.setScalar(0.72 + progress * 0.65);
-    effect.mesh.material.opacity = Math.max(0, (1 - progress) * 0.88);
-    effect.mesh.rotation.z += dt * 0.8;
+    if (effect.kind === "particles") {
+      const positions = effect.mesh.geometry.attributes.position;
+      for (let particle = 0; particle < effect.velocities.length; particle++) {
+        const velocity = effect.velocities[particle];
+        positions.array[particle * 3] += velocity.x * dt;
+        positions.array[particle * 3 + 1] += velocity.y * dt;
+        positions.array[particle * 3 + 2] += velocity.z * dt;
+        velocity.y -= 9.5 * dt;
+        velocity.multiplyScalar(Math.exp(-2.4 * dt));
+      }
+      positions.needsUpdate = true;
+      effect.mesh.material.opacity = Math.max(0, 1 - progress);
+    } else if (effect.kind === "beam") {
+      effect.mesh.scale.setScalar(.72 + Math.sin(progress * Math.PI) * .5);
+      effect.mesh.material.opacity = Math.max(0, Math.sin(progress * Math.PI) * .28);
+      effect.mesh.rotation.y += dt * 2.8;
+    } else {
+      effect.mesh.scale.setScalar(0.72 + progress * 0.65);
+      effect.mesh.material.opacity = Math.max(0, (1 - progress) * 0.88);
+      effect.mesh.rotation.z += dt * 0.8;
+    }
     if (progress >= 1) {
       scene.remove(effect.mesh);
       effect.mesh.geometry.dispose();
@@ -1267,7 +1478,8 @@ function updateHero(dt, elapsed) {
   if (input.length() > 1) input.normalize();
 
   const sprint = state.keys.ShiftLeft || state.keys.ShiftRight;
-  const speed = sprint ? 7.4 : 4.4;
+  const actionSlowdown = state.skillMotion > 0 ? .18 : state.attackMotion > 0 ? .46 : 1;
+  const speed = (sprint ? 7.4 : 4.4) * actionSlowdown;
   if (moving) {
     const forward = new THREE.Vector3(-Math.sin(state.yaw), 0, -Math.cos(state.yaw));
     const right = new THREE.Vector3(Math.cos(state.yaw), 0, -Math.sin(state.yaw));
@@ -1304,6 +1516,7 @@ function updateHero(dt, elapsed) {
     heroVisual.position.y = moving ? Math.abs(Math.sin(elapsed * 8)) * .05 : Math.sin(elapsed * 2) * .02;
   }
   if (mixer) mixer.update(dt * (sprint ? 1.18 : 1));
+  updateHeroCombatMotion(dt);
   collectNearby();
 }
 
@@ -1349,6 +1562,13 @@ function updateCamera(dt) {
   const desired = makeCandidate(state.cameraAvoidanceOffset, safeDistance);
   if (safeDistance < state.distance * .58) desired.y += 1.15;
   camera.position.lerp(desired, 1 - Math.pow(.00035, dt));
+  if (state.cameraShake > 0) {
+    const shake = state.cameraShake;
+    camera.position.x += (Math.random() - .5) * shake;
+    camera.position.y += (Math.random() - .5) * shake * .7;
+    camera.position.z += (Math.random() - .5) * shake;
+    state.cameraShake = Math.max(0, state.cameraShake - dt * 1.8);
+  }
   camera.lookAt(target);
 }
 
@@ -1443,7 +1663,9 @@ function resize() {
 window.addEventListener("resize", resize);
 
 function animate() {
-  const dt = Math.min(clock.getDelta(), .033);
+  const frameDt = Math.min(clock.getDelta(), .033);
+  state.hitStop = Math.max(0, state.hitStop - frameDt);
+  const dt = state.hitStop > 0 ? 0 : frameDt;
   const elapsed = clock.elapsedTime;
   state.attackCooldown = Math.max(0, state.attackCooldown - dt);
   state.skillCooldown = Math.max(0, state.skillCooldown - dt);
